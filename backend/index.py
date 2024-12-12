@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
+from pymongo.server_api import ServerApi
 from dotenv import load_dotenv
 import os
 import requests
@@ -42,7 +43,13 @@ connection_string = f"mongodb+srv://{quote_plus(username)}:{quote_plus(password)
 
 try:
     # Add connection timeout
-    client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
+    client = MongoClient(
+        connection_string,
+        server_api=ServerApi('1'),
+        serverSelectionTimeoutMS=5000,
+        connectTimeoutMS=5000,
+        retryWrites=True
+    )
     # Verify connection
     client.admin.command('ping')
     print("Successfully connected to MongoDB")
