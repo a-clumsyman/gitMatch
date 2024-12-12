@@ -16,12 +16,37 @@ export interface Profile {
   top_repos: Repository[];
 }
 
-const API_URL = import.meta.env.VITE_API_URL;
+// Use the deployed backend URL
+const API_URL = import.meta.env.PROD 
+  ? 'https://git-match-backend.vercel.app'  // Production URL
+  : 'http://localhost:8000';                // Development URL
 
 export async function getProfile(username: string): Promise<Profile> {
-  const response = await fetch(`${API_URL}/profile/${username}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch profile');
+  try {
+    const response = await fetch(`${API_URL}/profile/${username}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add timeout
+      signal: AbortSignal.timeout(15000), // 15 seconds timeout
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('User not found');
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+      throw new Error(`Failed to fetch profile: ${error.message}`);
+    }
+    throw new Error('An unexpected error occurred');
   }
-  return response.json();
 } 
