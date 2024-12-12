@@ -15,14 +15,17 @@ load_dotenv()
 # Initialize FastAPI
 app = FastAPI()
 
+ALLOWED_ORIGINS = [
+    "https://gitmatch.vercel.app",           # Production frontend
+    "https://git-match-backend.vercel.app",  # Production backend
+    "http://localhost:5173",                 # Local frontend
+    "http://localhost:8000"                  # Local backend
+]
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://gitmatch.vercel.app/",  # Replace with your actual frontend domain
-        "http://localhost:5173",
-        "http://localhost:5174"
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,7 +45,7 @@ if not all([username, password, cluster, database_name]):
 connection_string = f"mongodb+srv://{quote_plus(username)}:{quote_plus(password)}@{cluster}/?retryWrites=true&w=majority"
 
 try:
-    # Add connection timeout
+    # Add connection timeout and retry settings
     client = MongoClient(
         connection_string,
         server_api=ServerApi('1'),
