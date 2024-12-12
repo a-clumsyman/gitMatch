@@ -31,19 +31,25 @@ app.add_middleware(
 username = os.getenv("MONGO_USERNAME", "")
 password = os.getenv("MONGO_PASSWORD", "")
 cluster = os.getenv("MONGO_CLUSTER", "")
-options = os.getenv("MONGO_OPTIONS", "")
 database_name = os.getenv("MONGO_DB", "")
 
 # Validate environment variables
 if not all([username, password, cluster, database_name]):
     raise ValueError("Missing required MongoDB environment variables")
 
-# URL encode credentials only if they exist
-username = quote_plus(username) if username else ""
-password = quote_plus(password) if password else ""
+# Construct connection string
+connection_string = f"mongodb+srv://{quote_plus(username)}:{quote_plus(password)}@{cluster}/?retryWrites=true&w=majority"
 
-connection_string = f"mongodb+srv://{username}:{password}@{cluster}/{options}"
-client = MongoClient(connection_string)
+try:
+    # Add connection timeout
+    client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
+    # Verify connection
+    client.admin.command('ping')
+    print("Successfully connected to MongoDB")
+except Exception as e:
+    print(f"Failed to connect to MongoDB: {str(e)}")
+    raise
+
 db = client[database_name]
 users_collection = db.users
 
