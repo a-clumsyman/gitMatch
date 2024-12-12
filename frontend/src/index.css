@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #111827;
+    color: white;
+  }
+}
+
+/* Custom Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Custom Gradients */
+.gradient-border {
+  background: linear-gradient(
+    60deg,
+    rgba(59, 130, 246, 0.5),
+    rgba(147, 51, 234, 0.5),
+    rgba(236, 72, 153, 0.5)
+  );
+}
+
+.gradient-text {
+  background: linear-gradient(
+    to right,
+    #60a5fa,
+    #a855f7,
+    #ec4899
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
