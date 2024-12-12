@@ -19,7 +19,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://gitmatch-frontend.vercel.app",  # Replace with your actual frontend domain
+        "https://gitmatch.vercel.app/",  # Replace with your actual frontend domain
         "http://localhost:5173",
         "http://localhost:5174"
     ],
