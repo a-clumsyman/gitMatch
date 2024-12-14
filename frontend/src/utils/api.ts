@@ -13,7 +13,18 @@ export interface Profile {
   repositories: number;
   followers: number;
   top_language: string;
-  top_repos: Repository[];
+  latest_repos: Repository[];
+  git_age?: {
+    years: number;
+    days: number;
+  };
+  created_at?: string;
+}
+
+// Add interface for recent user
+export interface RecentUser {
+  username: string;
+  avatar: string;
 }
 
 // Use the deployed backend URL
@@ -48,5 +59,19 @@ export async function getProfile(username: string): Promise<Profile> {
       throw new Error(`Failed to fetch profile: ${error.message}`);
     }
     throw new Error('An unexpected error occurred');
+  }
+}
+
+// Add function to fetch recent users
+export async function getRecentUsers(): Promise<RecentUser[]> {
+  try {
+    const response = await fetch(`${API_URL}/recent-users`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch recent users');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching recent users:', error);
+    return [];
   }
 } 

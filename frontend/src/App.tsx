@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import UserCard from "./components/UserCard";
-import { Profile, getProfile } from "./utils/api";
+import React, { useState, useEffect } from "react";
+import { Profile, RecentUser, getProfile, getRecentUsers } from "./utils/api";
 import { calculateMatchScore } from "./utils/scores";
+import UserCard from "./components/UserCard";
 import ScoreCard from "./components/ScoreCard";
 
 function App() {
@@ -12,6 +12,7 @@ function App() {
   const [matchScore, setMatchScore] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
 
   const handleSearch = async () => {
     if (!username) {
@@ -27,6 +28,7 @@ function App() {
       setMatchProfile(null);
       setMatchScore(null);
       setMatchUsername("");
+      await fetchRecentUsers();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch profile");
     } finally {
@@ -71,6 +73,20 @@ function App() {
     setMatchUsername("");
   };
 
+  const fetchRecentUsers = async () => {
+    try {
+      const users = await getRecentUsers();
+      console.log("Fetched recent users:", users);
+      setRecentUsers(users);
+    } catch (error) {
+      console.error("Error fetching recent users:", error);
+    }
+  };
+
+  useEffect(() => {
+    console.log("Current recent users:", recentUsers);
+  }, [recentUsers]);
+
   return (
     <div className="min-h-screen bg-gray-900 relative overflow-hidden">
       {/* Animated Background */}
@@ -95,10 +111,12 @@ function App() {
       </div>
 
       {/* Content */}
-      <div className="relative max-w-7xl mx-auto px-4 py-12">
+      <div className="relative max-w-[1000px] mx-auto px-4 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">GitMatch</h1>
-          <p className="text-gray-400">Find your perfect coding partner</p>
+          <h1 className="text-5xl font-bold text-white mb-4">GitMatch</h1>
+          <p className="text-xl text-gray-400">
+            Find your perfect coding partner
+          </p>
         </div>
 
         {/* Error Display */}
@@ -111,8 +129,8 @@ function App() {
         )}
 
         {!profile ? (
-          // Initial Search
-          <div className="max-w-xl mx-auto">
+          // Initial Search - Centered and narrower
+          <div className="max-w-md mx-auto">
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl blur opacity-20"></div>
               <div className="relative bg-gray-800/50 rounded-2xl p-8 backdrop-blur-sm border border-white/10">
@@ -165,17 +183,71 @@ function App() {
                     </div>
                   </button>
                 </div>
+
+                {/* Recent Users Section */}
+                {recentUsers.length > 0 && (
+                  <div className="mt-10 pt-8 border-t border-white/10">
+                    <h3 className="text-sm text-gray-400 mb-6">
+                      Recent Profiles
+                    </h3>
+                    <div className="flex justify-center gap-10">
+                      {recentUsers.map((user) => (
+                        <button
+                          key={user.username}
+                          onClick={async () => {
+                            try {
+                              setLoading(true);
+                              setError(null);
+                              const data = await getProfile(user.username);
+                              setProfile(data);
+                              setMatchProfile(null);
+                              setMatchScore(null);
+                              setMatchUsername("");
+                              setUsername(user.username);
+                              await fetchRecentUsers();
+                            } catch (err) {
+                              setError(
+                                err instanceof Error
+                                  ? err.message
+                                  : "Failed to fetch profile"
+                              );
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          className="group flex flex-col items-center transition-transform hover:scale-105"
+                        >
+                          <div className="relative mb-3">
+                            <div className="absolute -inset-1 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <img
+                              src={user.avatar}
+                              alt={user.username}
+                              className="relative w-14 h-14 rounded-full border border-white/20"
+                            />
+                          </div>
+                          <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
+                            {user.username}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         ) : !matchProfile ? (
-          // Profile and Match Search
-          <div className="max-w-7xl mx-auto space-y-8">
-            <div className="max-w-xl mx-auto">
+          // Profile and Match Search - Centered layout
+          <div className="flex flex-col items-center gap-8">
+            <div className="w-[420px]">
+              {" "}
+              {/* Match UserCard width */}
               <UserCard profile={profile} />
             </div>
 
-            <div className="max-w-xl mx-auto">
+            <div className="w-[400px]">
+              {" "}
+              {/* Match UserCard width */}
               <div className="relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl blur opacity-20"></div>
                 <div className="relative bg-gray-800/50 rounded-2xl p-8 backdrop-blur-sm border border-white/10">
@@ -251,34 +323,34 @@ function App() {
             </div>
           </div>
         ) : (
-          // Match Results
+          // Match Results - Side by side cards
           <div className="space-y-8">
             {matchScore !== null && (
               <ScoreCard
                 score={matchScore}
-                className="max-w-2xl mx-auto transform hover:scale-105 transition-transform"
+                className="max-w-[880px] mx-auto transform hover:scale-105 transition-transform"
               />
             )}
 
-            <div className="flex flex-col lg:flex-row gap-8 justify-center items-start">
-              <div className="w-full lg:w-1/2 transform transition-all duration-500 hover:translate-x-2">
+            <div className="flex flex-col lg:flex-row gap-10 justify-center items-center">
+              <div className="transform transition-all duration-500 hover:translate-x-2">
                 <UserCard profile={profile} />
               </div>
-              <div className="w-full lg:w-1/2 transform transition-all duration-500 hover:translate-x-2">
+              <div className="transform transition-all duration-500 hover:translate-x-2">
                 <UserCard profile={matchProfile} />
               </div>
             </div>
 
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 mt-8">
               <button
                 onClick={handleReset}
-                className="px-6 py-3 bg-gray-800 rounded-xl text-gray-300 hover:bg-gray-700 transition-colors"
+                className="px-8 py-4 bg-gray-800 rounded-xl text-gray-300 hover:bg-gray-700 transition-colors"
               >
                 Start Over
               </button>
               <button
                 onClick={handleNewMatch}
-                className="px-6 py-3 bg-gray-800 rounded-xl text-gray-300 hover:bg-gray-700 transition-colors"
+                className="px-8 py-4 bg-gray-800 rounded-xl text-gray-300 hover:bg-gray-700 transition-colors"
               >
                 Try Another Match
               </button>

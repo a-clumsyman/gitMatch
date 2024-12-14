@@ -1,13 +1,12 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from dotenv import load_dotenv
-import os
-import requests
 from datetime import datetime
 from urllib.parse import quote_plus
-from bson import ObjectId
-from fastapi.middleware.cors import CORSMiddleware
+import os
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -62,6 +61,7 @@ except Exception as e:
 
 db = client[database_name]
 users_collection = db.users
+recent_users_collection = db.recent_users
 
 # GitHub API Base URL
 GITHUB_API_BASE = "https://api.github.com"
@@ -87,15 +87,20 @@ async def get_user_profile(username: str):
         user_response.raise_for_status()
         user_data = user_response.json()
 
-        # Fetch only top repositories
+        # Calculate account age
+        created_at = datetime.strptime(user_data["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+        account_age_days = (datetime.utcnow() - created_at).days
+        account_age_years = account_age_days / 365.25  # Account for leap years
+
+        # Fetch latest repositories
         repos_response = requests.get(
-            f"{GITHUB_API_BASE}/users/{username}/repos?sort=stars&per_page=2",
+            f"{GITHUB_API_BASE}/users/{username}/repos?sort=updated&per_page=2",
             headers=GITHUB_HEADERS
         )
         repos_response.raise_for_status()
         repos_data = repos_response.json()
 
-        # Get languages for top repos only
+        # Get languages for latest repos only
         language_stats = {}
         for repo in repos_data:
             if repo.get('language'):
@@ -109,13 +114,18 @@ async def get_user_profile(username: str):
             "repositories": user_data.get("public_repos", 0),
             "followers": user_data.get("followers", 0),
             "top_language": repos_data[0].get('language', "Unknown") if repos_data else "Unknown",
-            "top_repos": [{
+            "latest_repos": [{
                 "name": repo["name"],
                 "stars": repo["stargazers_count"],
                 "description": repo.get("description", "A stellar project."),
                 "url": repo["html_url"],
                 "language": repo.get("language", "Unknown")
             } for repo in repos_data],
+            "git_age": {
+                "years": round(account_age_years, 1),
+                "days": account_age_days
+            },
+            "created_at": user_data["created_at"],
             "last_updated": current_time.isoformat()
         }
 
@@ -124,6 +134,20 @@ async def get_user_profile(username: str):
             {"$set": user_profile},
             upsert=True
         )
+
+        # Update recent users
+        recent_users_collection.update_one(
+            {"username": user_data["login"]},
+            {
+                "$set": {
+                    "username": user_data["login"],
+                    "avatar": user_data["avatar_url"],
+                    "timestamp": datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+
         return user_profile
 
     except requests.exceptions.RequestException as e:
@@ -205,3 +229,15 @@ async def get_collaboration_rating(username1: str, username2: str):
             status_code=500,
             detail="Failed to calculate collaboration rating"
         )
+
+@app.get("/recent-users")
+async def get_recent_users():
+    try:
+        recent_users = list(recent_users_collection.find(
+            {}, 
+            {"username": 1, "avatar": 1, "_id": 0}
+        ).sort("timestamp", -1).limit(3))
+        return recent_users
+    except Exception as e:
+        print(f"Error fetching recent users: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch recent users")
