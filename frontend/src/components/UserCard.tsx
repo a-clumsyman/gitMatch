@@ -9,27 +9,24 @@ interface UserCardProps {
 const UserCard: React.FC<UserCardProps> = ({ profile }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const isTouch = isTouchDevice();
-  const touchStartPos = useRef({ x: 0, y: 0 });
-  const interactionThreshold = 5; // pixels to determine intentional interaction
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+  const lastTouchRef = useRef({ x: 0, y: 0 });
+  const animationRef = useRef<number>();
 
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
 
-    let rafId: number;
     let targetRotateX = 0;
     let targetRotateY = 0;
     let currentRotateX = 0;
     let currentRotateY = 0;
-    let isInteracting = false;
 
     const lerp = (start: number, end: number, factor: number) => {
       return start + (end - start) * factor;
     };
 
     const animate = () => {
-      if (!isInteracting) return;
-
       currentRotateX = lerp(currentRotateX, targetRotateX, 0.1);
       currentRotateY = lerp(currentRotateY, targetRotateY, 0.1);
 
@@ -39,86 +36,114 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
         rotateY(${currentRotateY}deg)
       `;
 
-      rafId = requestAnimationFrame(animate);
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    const calculateRotation = (x: number, y: number, rect: DOMRect) => {
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const mouseX = x - rect.left;
+      const mouseY = y - rect.top;
+
+      return {
+        rotateX: ((mouseY - centerY) / centerY) * -5, // Reduced intensity for smoother feel
+        rotateY: ((mouseX - centerX) / centerX) * 5,
+      };
     };
 
     const handleMove = (x: number, y: number) => {
       const rect = card.getBoundingClientRect();
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
+      const rotation = calculateRotation(x, y, rect);
 
-      const mouseX = x - rect.left;
-      const mouseY = y - rect.top;
+      targetRotateX = rotation.rotateX;
+      targetRotateY = rotation.rotateY;
 
-      targetRotateX = ((mouseY - centerY) / centerY) * -7;
-      targetRotateY = ((mouseX - centerX) / centerX) * 7;
+      if (!animationRef.current) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
     };
 
     const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
-      touchStartPos.current = {
+      touchStartRef.current = {
         x: touch.clientX,
         y: touch.clientY,
+        time: Date.now(),
       };
+      lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
-      const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
-      const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
+      const deltaX = touch.clientX - touchStartRef.current.x;
+      const deltaY = touch.clientY - touchStartRef.current.y;
+      const deltaTime = Date.now() - touchStartRef.current.time;
 
-      // If movement is mostly vertical, let the scroll happen
-      if (deltaY > deltaX && deltaY > interactionThreshold) {
-        isInteracting = false;
-        return;
-      }
+      // Only handle card rotation if the movement is intentional
+      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+        // Prevent scrolling if the movement is more horizontal
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          e.preventDefault();
+        }
 
-      // If movement is mostly horizontal, handle the card interaction
-      if (deltaX > deltaY && deltaX > interactionThreshold) {
-        e.preventDefault();
-        isInteracting = true;
         handleMove(touch.clientX, touch.clientY);
+        lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
       }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      isInteracting = true;
       handleMove(e.clientX, e.clientY);
     };
 
-    const handleLeave = () => {
-      isInteracting = false;
+    const resetCard = () => {
       targetRotateX = 0;
       targetRotateY = 0;
-      card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg)";
+
+      const resetAnimation = () => {
+        currentRotateX = lerp(currentRotateX, 0, 0.1);
+        currentRotateY = lerp(currentRotateY, 0, 0.1);
+
+        card.style.transform = `
+          perspective(1000px) 
+          rotateX(${currentRotateX}deg) 
+          rotateY(${currentRotateY}deg)
+        `;
+
+        if (
+          Math.abs(currentRotateX) > 0.01 ||
+          Math.abs(currentRotateY) > 0.01
+        ) {
+          requestAnimationFrame(resetAnimation);
+        } else {
+          card.style.transform = "";
+        }
+      };
+
+      requestAnimationFrame(resetAnimation);
     };
 
-    const handleEnter = () => {
-      isInteracting = true;
-      rafId = requestAnimationFrame(animate);
-    };
-
-    if (!isTouch) {
-      card.addEventListener("mousemove", handleMouseMove);
-      card.addEventListener("mouseleave", handleLeave);
-      card.addEventListener("mouseenter", handleEnter);
-    } else {
+    // Add event listeners based on device type
+    if (isTouch) {
       card.addEventListener("touchstart", handleTouchStart);
       card.addEventListener("touchmove", handleTouchMove, { passive: false });
-      card.addEventListener("touchend", handleLeave);
+      card.addEventListener("touchend", resetCard);
+    } else {
+      card.addEventListener("mousemove", handleMouseMove);
+      card.addEventListener("mouseleave", resetCard);
     }
 
     return () => {
-      if (!isTouch) {
-        card.removeEventListener("mousemove", handleMouseMove);
-        card.removeEventListener("mouseleave", handleLeave);
-        card.removeEventListener("mouseenter", handleEnter);
-      } else {
+      if (isTouch) {
         card.removeEventListener("touchstart", handleTouchStart);
         card.removeEventListener("touchmove", handleTouchMove);
-        card.removeEventListener("touchend", handleLeave);
+        card.removeEventListener("touchend", resetCard);
+      } else {
+        card.removeEventListener("mousemove", handleMouseMove);
+        card.removeEventListener("mouseleave", resetCard);
       }
-      cancelAnimationFrame(rafId);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
     };
   }, [isTouch]);
 
@@ -129,8 +154,7 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
         w-full sm:w-[420px] bg-[#0D1117]/40 rounded-2xl backdrop-blur-md 
         border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
         backdrop-saturate-[180%] transition-all duration-300 ease-out 
-        hover:border-white/20 relative isolate overflow-hidden
-        ${isTouch ? "p-6" : "p-6 sm:p-8"} 
+        hover:border-white/20 relative isolate overflow-hidden p-6 sm:p-8
       `}
       style={{
         transformStyle: "preserve-3d",
