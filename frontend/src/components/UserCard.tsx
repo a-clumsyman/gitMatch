@@ -12,7 +12,7 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
 
   useEffect(() => {
     const card = cardRef.current;
-    if (!card || isTouch) return;
+    if (!card) return;
 
     let rafId: number;
     let targetRotateX = 0;
@@ -37,35 +37,58 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
       rafId = requestAnimationFrame(animate);
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (x: number, y: number) => {
       const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
 
-      targetRotateX = ((y - centerY) / centerY) * -7; // Reduced from -10 to -7
-      targetRotateY = ((x - centerX) / centerX) * 7; // Reduced from 10 to 7
+      const mouseX = x - rect.left;
+      const mouseY = y - rect.top;
+
+      targetRotateX = ((mouseY - centerY) / centerY) * -7;
+      targetRotateY = ((mouseX - centerX) / centerX) * 7;
     };
 
-    const handleMouseLeave = () => {
+    const handleMouseMove = (e: MouseEvent) => {
+      handleMove(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleMove(touch.clientX, touch.clientY);
+    };
+
+    const handleLeave = () => {
       targetRotateX = 0;
       targetRotateY = 0;
     };
 
-    const handleMouseEnter = () => {
+    const handleEnter = () => {
       rafId = requestAnimationFrame(animate);
     };
 
-    card.addEventListener("mousemove", handleMouseMove);
-    card.addEventListener("mouseleave", handleMouseLeave);
-    card.addEventListener("mouseenter", handleMouseEnter);
+    // Add both mouse and touch event listeners
+    if (!isTouch) {
+      card.addEventListener("mousemove", handleMouseMove);
+      card.addEventListener("mouseleave", handleLeave);
+      card.addEventListener("mouseenter", handleEnter);
+    } else {
+      card.addEventListener("touchmove", handleTouchMove, { passive: false });
+      card.addEventListener("touchend", handleLeave);
+      card.addEventListener("touchstart", handleEnter);
+    }
 
     return () => {
-      card.removeEventListener("mousemove", handleMouseMove);
-      card.removeEventListener("mouseleave", handleMouseLeave);
-      card.removeEventListener("mouseenter", handleMouseEnter);
+      if (!isTouch) {
+        card.removeEventListener("mousemove", handleMouseMove);
+        card.removeEventListener("mouseleave", handleLeave);
+        card.removeEventListener("mouseenter", handleEnter);
+      } else {
+        card.removeEventListener("touchmove", handleTouchMove);
+        card.removeEventListener("touchend", handleLeave);
+        card.removeEventListener("touchstart", handleEnter);
+      }
       cancelAnimationFrame(rafId);
     };
   }, [isTouch]);
@@ -78,12 +101,13 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
         border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
         backdrop-saturate-[180%] transition-all duration-300 ease-out 
         hover:border-white/20 relative isolate overflow-hidden
+        ${isTouch ? "touch-none" : ""} 
         ${isTouch ? "p-6" : "p-6 sm:p-8"} 
       `}
       style={{
-        transformStyle: isTouch ? undefined : "preserve-3d",
-        transform: isTouch ? undefined : "perspective(1000px)",
-        willChange: isTouch ? undefined : "transform",
+        transformStyle: "preserve-3d",
+        transform: "perspective(1000px)",
+        willChange: "transform",
       }}
     >
       {/* Gradient overlay */}
