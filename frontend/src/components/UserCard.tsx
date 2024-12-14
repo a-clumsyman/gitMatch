@@ -9,6 +9,9 @@ interface UserCardProps {
 const UserCard: React.FC<UserCardProps> = ({ profile }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const isTouch = isTouchDevice();
+  const touchStartY = useRef<number>(0);
+  const isInteracting = useRef(false);
+  const scrollThreshold = 10; // pixels to determine if user is scrolling
 
   useEffect(() => {
     const card = cardRef.current;
@@ -28,11 +31,13 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
       currentRotateX = lerp(currentRotateX, targetRotateX, 0.1);
       currentRotateY = lerp(currentRotateY, targetRotateY, 0.1);
 
-      card.style.transform = `
-        perspective(1000px) 
-        rotateX(${currentRotateX}deg) 
-        rotateY(${currentRotateY}deg)
-      `;
+      if (isInteracting.current) {
+        card.style.transform = `
+          perspective(1000px) 
+          rotateX(${currentRotateX}deg) 
+          rotateY(${currentRotateY}deg)
+        `;
+      }
 
       rafId = requestAnimationFrame(animate);
     };
@@ -53,30 +58,53 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
       handleMove(e.clientX, e.clientY);
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
+    const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
+      touchStartY.current = touch.clientY;
+      isInteracting.current = true;
+      handleEnter();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      const deltaY = Math.abs(touch.clientY - touchStartY.current);
+
+      // If vertical movement is greater than threshold, user is probably scrolling
+      if (deltaY > scrollThreshold) {
+        isInteracting.current = false;
+        handleLeave();
+        return;
+      }
+
       handleMove(touch.clientX, touch.clientY);
     };
 
     const handleLeave = () => {
+      isInteracting.current = false;
       targetRotateX = 0;
       targetRotateY = 0;
+
+      // Smoothly reset the card position
+      card.style.transform = `
+        perspective(1000px) 
+        rotateX(0deg) 
+        rotateY(0deg)
+      `;
     };
 
     const handleEnter = () => {
+      isInteracting.current = true;
       rafId = requestAnimationFrame(animate);
     };
 
-    // Add both mouse and touch event listeners
     if (!isTouch) {
       card.addEventListener("mousemove", handleMouseMove);
       card.addEventListener("mouseleave", handleLeave);
       card.addEventListener("mouseenter", handleEnter);
     } else {
-      card.addEventListener("touchmove", handleTouchMove, { passive: false });
+      card.addEventListener("touchstart", handleTouchStart);
+      card.addEventListener("touchmove", handleTouchMove);
       card.addEventListener("touchend", handleLeave);
-      card.addEventListener("touchstart", handleEnter);
     }
 
     return () => {
@@ -85,9 +113,9 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
         card.removeEventListener("mouseleave", handleLeave);
         card.removeEventListener("mouseenter", handleEnter);
       } else {
+        card.removeEventListener("touchstart", handleTouchStart);
         card.removeEventListener("touchmove", handleTouchMove);
         card.removeEventListener("touchend", handleLeave);
-        card.removeEventListener("touchstart", handleEnter);
       }
       cancelAnimationFrame(rafId);
     };
@@ -101,7 +129,6 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
         border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
         backdrop-saturate-[180%] transition-all duration-300 ease-out 
         hover:border-white/20 relative isolate overflow-hidden
-        ${isTouch ? "touch-none" : ""} 
         ${isTouch ? "p-6" : "p-6 sm:p-8"} 
       `}
       style={{

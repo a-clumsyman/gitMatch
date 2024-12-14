@@ -190,7 +190,7 @@ function App() {
                     <h3 className="text-sm text-gray-400 mb-4 sm:mb-6">
                       Recent Profiles
                     </h3>
-                    <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-10">
+                    <div className="flex justify-center gap-6 sm:gap-8">
                       {recentUsers.map((user) => (
                         <button
                           key={user.username}
@@ -215,17 +215,17 @@ function App() {
                               setLoading(false);
                             }
                           }}
-                          className="group flex flex-col items-center transition-transform hover:scale-105"
+                          className="group flex flex-col items-center w-20"
                         >
-                          <div className="relative mb-2 sm:mb-3">
+                          <div className="relative mb-2">
                             <div className="absolute -inset-1 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
                             <img
                               src={user.avatar}
                               alt={user.username}
-                              className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-white/20"
+                              className="relative w-12 h-12 rounded-full border border-white/20"
                             />
                           </div>
-                          <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
+                          <span className="text-sm text-gray-400 group-hover:text-white transition-colors truncate w-full text-center">
                             {user.username}
                           </span>
                         </button>
