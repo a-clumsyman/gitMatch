@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Profile } from "../utils/api";
+import { isTouchDevice } from "../utils/device";
 
 interface UserCardProps {
   profile: Profile;
@@ -10,7 +11,7 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
 
   useEffect(() => {
     const card = cardRef.current;
-    if (!card) return;
+    if (!card || isTouchDevice()) return;
 
     let rafId: number;
     let targetRotateX = 0;
@@ -71,16 +72,18 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
   return (
     <div
       ref={cardRef}
-      className="w-[420px] bg-[#0D1117]/40 rounded-2xl p-8 backdrop-blur-md border border-white/10
-                 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-saturate-[180%]
-                 transition-all duration-300 ease-out hover:border-white/20
-                 before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-b 
-                 before:from-white/5 before:to-transparent before:pointer-events-none
-                 relative isolate overflow-hidden"
+      className="w-full sm:w-[420px] bg-[#0D1117]/40 rounded-2xl p-6 sm:p-8 backdrop-blur-md 
+                 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
+                 backdrop-saturate-[180%] transition-all duration-300 ease-out 
+                 hover:border-white/20 relative isolate overflow-hidden"
       style={{
         transformStyle: "preserve-3d",
         transform: "perspective(1000px)",
         willChange: "transform",
+        "@media (hover: none)": {
+          transform: "none",
+          transformStyle: "flat",
+        },
       }}
     >
       {/* Gradient overlay */}

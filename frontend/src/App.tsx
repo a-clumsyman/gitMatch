@@ -84,8 +84,8 @@ function App() {
   };
 
   useEffect(() => {
-    console.log("Current recent users:", recentUsers);
-  }, [recentUsers]);
+    fetchRecentUsers();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 relative overflow-hidden">
@@ -111,7 +111,7 @@ function App() {
       </div>
 
       {/* Content */}
-      <div className="relative max-w-[1000px] mx-auto px-4 py-12">
+      <div className="relative max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-white mb-4">GitMatch</h1>
           <p className="text-xl text-gray-400">
@@ -186,11 +186,11 @@ function App() {
 
                 {/* Recent Users Section */}
                 {recentUsers.length > 0 && (
-                  <div className="mt-10 pt-8 border-t border-white/10">
-                    <h3 className="text-sm text-gray-400 mb-6">
+                  <div className="mt-8 sm:mt-10 pt-8 border-t border-white/10">
+                    <h3 className="text-sm text-gray-400 mb-4 sm:mb-6">
                       Recent Profiles
                     </h3>
-                    <div className="flex justify-center gap-10">
+                    <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-10">
                       {recentUsers.map((user) => (
                         <button
                           key={user.username}
@@ -217,12 +217,12 @@ function App() {
                           }}
                           className="group flex flex-col items-center transition-transform hover:scale-105"
                         >
-                          <div className="relative mb-3">
+                          <div className="relative mb-2 sm:mb-3">
                             <div className="absolute -inset-1 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
                             <img
                               src={user.avatar}
                               alt={user.username}
-                              className="relative w-14 h-14 rounded-full border border-white/20"
+                              className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-white/20"
                             />
                           </div>
                           <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
@@ -332,11 +332,11 @@ function App() {
               />
             )}
 
-            <div className="flex flex-col lg:flex-row gap-10 justify-center items-center">
-              <div className="transform transition-all duration-500 hover:translate-x-2">
+            <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 lg:gap-10 justify-center items-center">
+              <div className="w-full max-w-[420px] transform transition-all duration-500 hover:translate-x-2">
                 <UserCard profile={profile} />
               </div>
-              <div className="transform transition-all duration-500 hover:translate-x-2">
+              <div className="w-full max-w-[420px] transform transition-all duration-500 hover:translate-x-2">
                 <UserCard profile={matchProfile} />
               </div>
             </div>
