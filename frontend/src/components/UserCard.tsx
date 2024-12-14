@@ -8,10 +8,11 @@ interface UserCardProps {
 
 const UserCard: React.FC<UserCardProps> = ({ profile }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const isTouch = isTouchDevice();
 
   useEffect(() => {
     const card = cardRef.current;
-    if (!card || isTouchDevice()) return;
+    if (!card || isTouch) return;
 
     let rafId: number;
     let targetRotateX = 0;
@@ -67,23 +68,22 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
       card.removeEventListener("mouseenter", handleMouseEnter);
       cancelAnimationFrame(rafId);
     };
-  }, []);
+  }, [isTouch]);
 
   return (
     <div
       ref={cardRef}
-      className="w-full sm:w-[420px] bg-[#0D1117]/40 rounded-2xl p-6 sm:p-8 backdrop-blur-md 
-                 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
-                 backdrop-saturate-[180%] transition-all duration-300 ease-out 
-                 hover:border-white/20 relative isolate overflow-hidden"
+      className={`
+        w-full sm:w-[420px] bg-[#0D1117]/40 rounded-2xl backdrop-blur-md 
+        border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
+        backdrop-saturate-[180%] transition-all duration-300 ease-out 
+        hover:border-white/20 relative isolate overflow-hidden
+        ${isTouch ? "p-6" : "p-6 sm:p-8"} 
+      `}
       style={{
-        transformStyle: "preserve-3d",
-        transform: "perspective(1000px)",
-        willChange: "transform",
-        "@media (hover: none)": {
-          transform: "none",
-          transformStyle: "flat",
-        },
+        transformStyle: isTouch ? undefined : "preserve-3d",
+        transform: isTouch ? undefined : "perspective(1000px)",
+        willChange: isTouch ? undefined : "transform",
       }}
     >
       {/* Gradient overlay */}
@@ -91,7 +91,12 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
 
       {/* Content container with glass effect */}
       <div className="relative z-10">
-        <div className="flex items-center space-x-5 mb-10">
+        <div
+          className={`
+          flex items-center space-x-4 sm:space-x-5 mb-8 sm:mb-10
+          ${isTouch ? "touch-pan-y" : ""}
+        `}
+        >
           <div className="relative">
             <div className="absolute -inset-1 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full blur-sm" />
             <img

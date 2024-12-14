@@ -238,19 +238,17 @@ function App() {
           </div>
         ) : !matchProfile ? (
           // Profile and Match Search - Centered layout
-          <div className="flex flex-col items-center gap-8">
-            <div className="w-[420px]">
-              {" "}
-              {/* Match UserCard width */}
+          <div className="flex flex-col items-center gap-6 sm:gap-8 w-full">
+            {/* Profile Card Container */}
+            <div className="w-full sm:w-[420px] px-4 sm:px-0">
               <UserCard profile={profile} />
             </div>
 
-            <div className="w-[400px]">
-              {" "}
-              {/* Match UserCard width */}
+            {/* Match Search Container */}
+            <div className="w-full sm:w-[420px] px-4 sm:px-0">
               <div className="relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl blur opacity-20"></div>
-                <div className="relative bg-gray-800/50 rounded-2xl p-8 backdrop-blur-sm border border-white/10">
+                <div className="relative bg-gray-800/50 rounded-2xl p-6 sm:p-8 backdrop-blur-sm border border-white/10">
                   <div className="text-center mb-6">
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-transparent bg-clip-text mb-2">
                       Check Compatibility
@@ -260,20 +258,24 @@ function App() {
                     </p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-4 w-full">
                     <input
                       type="text"
                       value={matchUsername}
                       onChange={(e) => setMatchUsername(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleCheckMatch()}
                       placeholder="Enter GitHub username to match with"
-                      className="w-full px-4 py-4 bg-gray-900/50 rounded-xl border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all duration-300 text-lg"
+                      className="w-full px-4 py-3 sm:py-4 bg-gray-900/50 rounded-xl border border-white/10 
+                                 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 
+                                 focus:ring-1 focus:ring-blue-500/50 transition-all duration-300 
+                                 text-base sm:text-lg"
                       disabled={loading}
                     />
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 sm:gap-4">
                       <button
                         onClick={handleReset}
-                        className="flex-1 px-4 py-4 bg-gray-800 rounded-xl text-gray-300 hover:bg-gray-700 transition-colors"
+                        className="flex-1 px-3 sm:px-4 py-3 sm:py-4 bg-gray-800 rounded-xl 
+                                   text-gray-300 hover:bg-gray-700 transition-colors text-base sm:text-lg"
                       >
                         Start Over
                       </button>
