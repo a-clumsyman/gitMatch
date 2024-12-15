@@ -1,6 +1,73 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Profile } from "../utils/api";
 import { isTouchDevice } from "../utils/device";
+
+const Icons = {
+  star: (
+    <svg
+      className="w-4 h-4 text-[#E3B341]"
+      fill="currentColor"
+      viewBox="0 0 16 16"
+    >
+      <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25z" />
+    </svg>
+  ),
+  commit: (
+    <svg
+      className="w-4 h-4 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 12h8M12 8v8m0-8V4m0 16v-4"
+      />
+      <circle cx="12" cy="12" r="2" fill="currentColor" />
+    </svg>
+  ),
+  code: (
+    <svg
+      className="w-4 h-4 text-gray-400"
+      fill="currentColor"
+      viewBox="0 0 16 16"
+    >
+      <path d="M4.72 3.22a.75.75 0 0 1 1.06 1.06L2.06 8l3.72 3.72a.75.75 0 1 1-1.06 1.06L.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25zm6.56 0a.75.75 0 1 0-1.06 1.06L13.94 8l-3.72 3.72a.75.75 0 1 0 1.06 1.06l4.25-4.25a.75.75 0 0 0 0-1.06l-4.25-4.25z" />
+    </svg>
+  ),
+  repository: (
+    <svg
+      className="w-4 h-4 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 3h18v18H3V3zm0 4.5h18M7.5 3v18"
+      />
+    </svg>
+  ),
+  followers: (
+    <svg
+      className="w-4 h-4 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+      />
+    </svg>
+  ),
+};
 
 interface UserCardProps {
   profile: Profile;
@@ -8,178 +75,129 @@ interface UserCardProps {
 
 const UserCard: React.FC<UserCardProps> = ({ profile }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [avatarError, setAvatarError] = useState(false);
   const isTouch = isTouchDevice();
-  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
-  const lastTouchRef = useRef({ x: 0, y: 0 });
-  const animationRef = useRef<number>();
 
   useEffect(() => {
     const card = cardRef.current;
-    if (!card) return;
+    if (!card || isTouch) return;
 
-    let targetRotateX = 0;
-    let targetRotateY = 0;
-    let currentRotateX = 0;
-    let currentRotateY = 0;
+    let rafId: number;
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
 
     const lerp = (start: number, end: number, factor: number) => {
       return start + (end - start) * factor;
     };
 
-    const animate = () => {
-      currentRotateX = lerp(currentRotateX, targetRotateX, 0.1);
-      currentRotateY = lerp(currentRotateY, targetRotateY, 0.1);
+    const updateTilt = () => {
+      // Smooth interpolation
+      currentX = lerp(currentX, targetX, 0.1);
+      currentY = lerp(currentY, targetY, 0.1);
 
-      card.style.transform = `
-        perspective(1000px) 
-        rotateX(${currentRotateX}deg) 
-        rotateY(${currentRotateY}deg)
-      `;
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    const calculateRotation = (x: number, y: number, rect: DOMRect) => {
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      const mouseX = x - rect.left;
-      const mouseY = y - rect.top;
-
-      return {
-        rotateX: ((mouseY - centerY) / centerY) * -5, // Reduced intensity for smoother feel
-        rotateY: ((mouseX - centerX) / centerX) * 5,
-      };
-    };
-
-    const handleMove = (x: number, y: number) => {
-      const rect = card.getBoundingClientRect();
-      const rotation = calculateRotation(x, y, rect);
-
-      targetRotateX = rotation.rotateX;
-      targetRotateY = rotation.rotateY;
-
-      if (!animationRef.current) {
-        animationRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    const handleTouchStart = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      touchStartRef.current = {
-        x: touch.clientX,
-        y: touch.clientY,
-        time: Date.now(),
-      };
-      lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - touchStartRef.current.x;
-      const deltaY = touch.clientY - touchStartRef.current.y;
-      const deltaTime = Date.now() - touchStartRef.current.time;
-
-      // Only handle card rotation if the movement is intentional
-      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-        // Prevent scrolling if the movement is more horizontal
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          e.preventDefault();
-        }
-
-        handleMove(touch.clientX, touch.clientY);
-        lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+      // Apply transform only if movement is significant
+      if (Math.abs(currentX) > 0.01 || Math.abs(currentY) > 0.01) {
+        card.style.transform = `perspective(1000px) rotateX(${currentY}deg) rotateY(${currentX}deg)`;
+        rafId = requestAnimationFrame(updateTilt);
+      } else {
+        card.style.transform = "none";
       }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      handleMove(e.clientX, e.clientY);
+      const rect = card.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      // Calculate rotation (max 8 degrees)
+      targetX = ((e.clientX - centerX) / (rect.width / 2)) * 8;
+      targetY = ((e.clientY - centerY) / (rect.height / 2)) * -8;
+
+      // Start animation loop if not already running
+      if (!rafId) {
+        rafId = requestAnimationFrame(updateTilt);
+      }
     };
 
-    const resetCard = () => {
-      targetRotateX = 0;
-      targetRotateY = 0;
-
-      const resetAnimation = () => {
-        currentRotateX = lerp(currentRotateX, 0, 0.1);
-        currentRotateY = lerp(currentRotateY, 0, 0.1);
-
-        card.style.transform = `
-          perspective(1000px) 
-          rotateX(${currentRotateX}deg) 
-          rotateY(${currentRotateY}deg)
-        `;
-
-        if (
-          Math.abs(currentRotateX) > 0.01 ||
-          Math.abs(currentRotateY) > 0.01
-        ) {
-          requestAnimationFrame(resetAnimation);
-        } else {
-          card.style.transform = "";
-        }
-      };
-
-      requestAnimationFrame(resetAnimation);
+    const handleMouseLeave = () => {
+      targetX = 0;
+      targetY = 0;
+      if (!rafId) {
+        rafId = requestAnimationFrame(updateTilt);
+      }
     };
 
-    // Add event listeners based on device type
-    if (isTouch) {
-      card.addEventListener("touchstart", handleTouchStart);
-      card.addEventListener("touchmove", handleTouchMove, { passive: false });
-      card.addEventListener("touchend", resetCard);
-    } else {
-      card.addEventListener("mousemove", handleMouseMove);
-      card.addEventListener("mouseleave", resetCard);
-    }
+    const handleMouseEnter = () => {
+      // Reset transform on enter to ensure smooth start
+      card.style.transform = "none";
+    };
+
+    // Add event listeners
+    window.addEventListener("mousemove", handleMouseMove);
+    card.addEventListener("mouseleave", handleMouseLeave);
+    card.addEventListener("mouseenter", handleMouseEnter);
 
     return () => {
-      if (isTouch) {
-        card.removeEventListener("touchstart", handleTouchStart);
-        card.removeEventListener("touchmove", handleTouchMove);
-        card.removeEventListener("touchend", resetCard);
-      } else {
-        card.removeEventListener("mousemove", handleMouseMove);
-        card.removeEventListener("mouseleave", resetCard);
-      }
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      window.removeEventListener("mousemove", handleMouseMove);
+      card.removeEventListener("mouseleave", handleMouseLeave);
+      card.removeEventListener("mouseenter", handleMouseEnter);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
       }
     };
   }, [isTouch]);
 
+  // Fallback avatar component
+  const FallbackAvatar = () => (
+    <div className="relative w-16 h-16 rounded-full border border-white/20 ring-2 ring-white/10 bg-[#161B22] flex items-center justify-center">
+      <span className="text-2xl font-bold text-white/70">
+        {profile.username.charAt(0).toUpperCase()}
+      </span>
+    </div>
+  );
+
+  // Safe number formatting
+  const formatNumber = (value: number | undefined | null): string => {
+    if (typeof value !== "number") return "0";
+    return value.toLocaleString() || "0";
+  };
+
   return (
     <div
       ref={cardRef}
-      className={`
-        w-full sm:w-[420px] bg-[#0D1117]/40 rounded-2xl backdrop-blur-md 
+      className="w-full sm:w-[420px] bg-[#0D1117]/40 rounded-2xl backdrop-blur-md 
         border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
         backdrop-saturate-[180%] transition-all duration-300 ease-out 
-        hover:border-white/20 relative isolate overflow-hidden p-6 sm:p-8
-      `}
+        hover:border-white/20 relative overflow-hidden p-6 sm:p-8"
       style={{
         transformStyle: "preserve-3d",
-        transform: "perspective(1000px)",
         willChange: "transform",
       }}
     >
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+      {/* Background gradient */}
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none"
+        style={{ transform: "translateZ(0px)" }}
+      />
 
-      {/* Content container with glass effect */}
-      <div className="relative z-10">
-        <div
-          className={`
-          flex items-center space-x-4 sm:space-x-5 mb-8 sm:mb-10
-          ${isTouch ? "touch-pan-y" : ""}
-        `}
-        >
+      <div className="relative z-10" style={{ transform: "translateZ(2px)" }}>
+        {/* Profile Section */}
+        <div className="flex items-center space-x-4 sm:space-x-5 mb-8 sm:mb-10">
           <div className="relative">
             <div className="absolute -inset-1 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full blur-sm" />
-            <img
-              src={profile.avatar}
-              alt={profile.username}
-              className="relative w-16 h-16 rounded-full border border-white/20 ring-2 ring-white/10"
-            />
+            {!avatarError ? (
+              <img
+                src={profile.avatar}
+                alt={profile.username}
+                className="relative w-16 h-16 rounded-full border border-white/20 ring-2 ring-white/10"
+                onError={() => setAvatarError(true)}
+                loading="lazy"
+              />
+            ) : (
+              <FallbackAvatar />
+            )}
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white/90 mb-1">
@@ -195,9 +213,14 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-10">
-          {["Repositories", "Followers"].map((label, i) => (
-            <div key={label} className="relative group">
+        {/* Stats Section */}
+        <div className="grid grid-cols-3 gap-4 mb-10">
+          {[
+            { value: profile.repositories, icon: Icons.repository },
+            { value: profile.followers, icon: Icons.followers },
+            { value: profile.total_stars, icon: Icons.star },
+          ].map((item, index) => (
+            <div key={index} className="relative group">
               <div
                 className="absolute -inset-1 bg-gradient-to-br from-purple-500/10 to-blue-500/10 
                             rounded-xl blur-sm group-hover:from-purple-500/20 group-hover:to-blue-500/20 
@@ -207,23 +230,43 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
                 className="relative text-center p-6 bg-[#161B22]/30 rounded-xl 
                             backdrop-blur-sm border border-white/5 transition-colors duration-300"
               >
-                <div className="text-3xl font-bold text-white/90 mb-1">
-                  {i === 0 ? profile.repositories : profile.followers}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="text-3xl font-bold text-white/90">
+                    {formatNumber(item.value)}
+                  </div>
+                  <div>{item.icon}</div>
                 </div>
-                <div className="text-sm text-gray-400/90">{label}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mb-10">
-          <div className="text-sm text-gray-400/90 mb-3">Top Language</div>
-          <div className="text-xl font-bold text-white/90">
-            {profile.top_language}
+        {/* Language and Commits Section */}
+        <div className="grid grid-cols-2 gap-4 mb-10">
+          <div className="flex flex-col items-center">
+            <div className="text-sm text-gray-400/90 mb-2">Top Language</div>
+            <div className="flex items-center gap-2">
+              <div>{Icons.code}</div>
+              <span className="text-lg font-bold text-white/90">
+                {profile.top_language || "Unknown"}
+              </span>
+            </div>
           </div>
+          {profile.monthly_commits !== undefined && (
+            <div className="flex flex-col items-center">
+              <div className="text-sm text-gray-400/90 mb-2">This Month</div>
+              <div className="flex items-center gap-2">
+                <div>{Icons.commit}</div>
+                <span className="text-lg font-bold text-white/90">
+                  {formatNumber(profile.monthly_commits)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {profile.latest_repos && profile.latest_repos.length > 0 && (
+        {/* Repositories Section */}
+        {profile.latest_repos?.length > 0 && (
           <div>
             <div className="text-sm text-gray-400/90 mb-4">
               Latest Repositories
@@ -255,8 +298,11 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
                       </div>
                     </div>
                     <div className="text-sm flex items-center space-x-3 pt-2">
-                      <span className="text-[#E3B341]/90 flex items-center">
-                        <span className="mr-1">★</span> {repo.stars}
+                      <span className="flex items-center gap-1">
+                        <div>{Icons.star}</div>
+                        <div className="text-[#E3B341]/90">
+                          {formatNumber(repo.stars)}
+                        </div>
                       </span>
                       <span className="text-gray-400/90">{repo.language}</span>
                     </div>

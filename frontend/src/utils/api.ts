@@ -12,6 +12,7 @@ export interface Profile {
   bio: string;
   repositories: number;
   followers: number;
+  total_stars: number;
   top_language: string;
   latest_repos: Repository[];
   git_age?: {
@@ -19,6 +20,7 @@ export interface Profile {
     days: number;
   };
   created_at?: string;
+  monthly_commits?: number;
 }
 
 // Add interface for recent user

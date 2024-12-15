@@ -65,7 +65,44 @@
   color: transparent;
 }
 
-/* Add these to your existing CSS */
+/* 3D Card System */
+.card-container {
+  transform-style: preserve-3d;
+  transform: perspective(1000px) translateZ(0);
+  transition: all 0.3s ease-out;
+}
+
+.card-content {
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease-out;
+}
+
+/* Card Layers with proper depth */
+.card-layer-base {
+  transform-style: preserve-3d;
+  transform: translateZ(0);
+  transition: transform 0.3s ease-out;
+}
+
+.card-layer-1 {
+  transform-style: preserve-3d;
+  transform: translateZ(100px);
+  transition: transform 0.3s ease-out;
+}
+
+.card-layer-2 {
+  transform-style: preserve-3d;
+  transform: translateZ(60px);
+  transition: transform 0.3s ease-out;
+}
+
+.card-layer-3 {
+  transform-style: preserve-3d;
+  transform: translateZ(30px);
+  transition: transform 0.3s ease-out;
+}
+
+/* Utilities */
 @layer utilities {
   .preserve-3d {
     transform-style: preserve-3d;
@@ -95,15 +132,6 @@
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
   }
-}
-
-/* Add smooth transitions for card elements */
-.card-content {
-  transition: transform 0.1s ease;
-}
-
-.card-content:hover {
-  transform: translateZ(20px);
 }
 
 .line-clamp-1 {
