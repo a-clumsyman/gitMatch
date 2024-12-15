@@ -93,6 +93,12 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
       const rotateX = ((y - centerY) / centerY) * -10;
       const rotateY = ((x - centerX) / centerX) * 10;
 
+      const shineMoveX = (x / rect.width) * 100;
+      const shineMoveY = (y / rect.height) * 100;
+
+      card.style.setProperty("--shine-x", `${shineMoveX}%`);
+      card.style.setProperty("--shine-y", `${shineMoveY}%`);
+
       card.style.transform = `
         perspective(1000px)
         rotateX(${rotateX}deg)
@@ -114,6 +120,8 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
     const resetTilt = () => {
       card.style.transform =
         "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
+      card.style.setProperty("--shine-x", "50%");
+      card.style.setProperty("--shine-y", "50%");
     };
 
     if (!isTouch) {
@@ -159,7 +167,7 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
         border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
         backdrop-saturate-[180%] transition-all duration-300 ease-out 
         hover:border-white/20 relative overflow-hidden p-6 sm:p-8
-        hover:shadow-[0_15px_45px_rgba(0,0,0,0.35)]"
+        hover:shadow-[0_15px_45px_rgba(0,0,0,0.35)] card-3d"
       style={{
         transformStyle: "preserve-3d",
         willChange: "transform",
@@ -168,6 +176,10 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
         transition: "transform 0.1s ease-out",
       }}
     >
+      {/* Pokemon TCG shine effects */}
+      <div className="card-shine" />
+      <div className="card-holo" />
+
       {/* Background gradient with enhanced depth */}
       <div
         className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none"
