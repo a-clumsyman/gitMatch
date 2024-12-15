@@ -80,71 +80,59 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
 
   useEffect(() => {
     const card = cardRef.current;
-    if (!card || isTouch) return;
+    if (!card) return;
 
-    let rafId: number;
-    let targetX = 0;
-    let targetY = 0;
-    let currentX = 0;
-    let currentY = 0;
+    const handleMove = (e: MouseEvent | Touch) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    const lerp = (start: number, end: number, factor: number) => {
-      return start + (end - start) * factor;
-    };
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
 
-    const updateTilt = () => {
-      // Smooth interpolation
-      currentX = lerp(currentX, targetX, 0.1);
-      currentY = lerp(currentY, targetY, 0.1);
+      const rotateX = ((y - centerY) / centerY) * -10;
+      const rotateY = ((x - centerX) / centerX) * 10;
 
-      // Apply transform only if movement is significant
-      if (Math.abs(currentX) > 0.01 || Math.abs(currentY) > 0.01) {
-        card.style.transform = `perspective(1000px) rotateX(${currentY}deg) rotateY(${currentX}deg)`;
-        rafId = requestAnimationFrame(updateTilt);
-      } else {
-        card.style.transform = "none";
-      }
+      card.style.transform = `
+        perspective(1000px)
+        rotateX(${rotateX}deg)
+        rotateY(${rotateY}deg)
+        scale3d(1.02, 1.02, 1.02)
+      `;
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      const rect = card.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      // Calculate rotation (max 8 degrees)
-      targetX = ((e.clientX - centerX) / (rect.width / 2)) * 8;
-      targetY = ((e.clientY - centerY) / (rect.height / 2)) * -8;
-
-      // Start animation loop if not already running
-      if (!rafId) {
-        rafId = requestAnimationFrame(updateTilt);
-      }
+      e.preventDefault();
+      handleMove(e);
     };
 
-    const handleMouseLeave = () => {
-      targetX = 0;
-      targetY = 0;
-      if (!rafId) {
-        rafId = requestAnimationFrame(updateTilt);
-      }
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      handleMove(e.touches[0]);
     };
 
-    const handleMouseEnter = () => {
-      // Reset transform on enter to ensure smooth start
-      card.style.transform = "none";
+    const resetTilt = () => {
+      card.style.transform =
+        "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
     };
 
-    // Add event listeners
-    window.addEventListener("mousemove", handleMouseMove);
-    card.addEventListener("mouseleave", handleMouseLeave);
-    card.addEventListener("mouseenter", handleMouseEnter);
+    if (!isTouch) {
+      card.addEventListener("mousemove", handleMouseMove);
+      card.addEventListener("mouseleave", resetTilt);
+      card.addEventListener("mouseenter", resetTilt);
+    } else {
+      card.addEventListener("touchmove", handleTouchMove, { passive: false });
+      card.addEventListener("touchend", resetTilt);
+    }
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      card.removeEventListener("mouseleave", handleMouseLeave);
-      card.removeEventListener("mouseenter", handleMouseEnter);
-      if (rafId) {
-        cancelAnimationFrame(rafId);
+      if (!isTouch) {
+        card.removeEventListener("mousemove", handleMouseMove);
+        card.removeEventListener("mouseleave", resetTilt);
+        card.removeEventListener("mouseenter", resetTilt);
+      } else {
+        card.removeEventListener("touchmove", handleTouchMove);
+        card.removeEventListener("touchend", resetTilt);
       }
     };
   }, [isTouch]);
@@ -170,19 +158,23 @@ const UserCard: React.FC<UserCardProps> = ({ profile }) => {
       className="w-full sm:w-[420px] bg-[#0D1117]/40 rounded-2xl backdrop-blur-md 
         border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
         backdrop-saturate-[180%] transition-all duration-300 ease-out 
-        hover:border-white/20 relative overflow-hidden p-6 sm:p-8"
+        hover:border-white/20 relative overflow-hidden p-6 sm:p-8
+        hover:shadow-[0_15px_45px_rgba(0,0,0,0.35)]"
       style={{
         transformStyle: "preserve-3d",
         willChange: "transform",
+        touchAction: isTouch ? "none" : "auto",
+        transformOrigin: "center center",
+        transition: "transform 0.1s ease-out",
       }}
     >
-      {/* Background gradient */}
+      {/* Background gradient with enhanced depth */}
       <div
         className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none"
-        style={{ transform: "translateZ(0px)" }}
+        style={{ transform: "translateZ(1px)" }}
       />
 
-      <div className="relative z-10" style={{ transform: "translateZ(2px)" }}>
+      <div className="relative z-10" style={{ transform: "translateZ(50px)" }}>
         {/* Profile Section */}
         <div className="flex items-center space-x-4 sm:space-x-5 mb-8 sm:mb-10">
           <div className="relative">
